@@ -31,12 +31,16 @@ private[redshift] object Parameters {
     // * distkey has no default, but is optional unless using diststyle KEY
     // * jdbcdriver has no default, but is optional
 
+    "tempformat" -> "AVRO",
+    "csvnullstring" -> "@NULL@",
     "overwrite" -> "false",
     "diststyle" -> "EVEN",
     "usestagingtable" -> "true",
     "preactions" -> ";",
     "postactions" -> ";"
   )
+
+  val VALID_TEMP_FORMATS = Set("AVRO", "JSON", "CSV")
 
   /**
    * Merge user parameters with the defaults, preferring user parameters if specified
@@ -45,6 +49,12 @@ private[redshift] object Parameters {
     if (!userParameters.contains("tempdir")) {
       throw new IllegalArgumentException("'tempdir' is required for all Redshift loads and saves")
     }
+    if (userParameters.contains("tempformat") &&
+        !(VALID_TEMP_FORMATS contains userParameters("tempformat"))) {
+        throw new IllegalArgumentException(
+            s"""Invalid temp format: ${userParameters("tempformat")}""")
+    }
+
     if (!userParameters.contains("url")) {
       throw new IllegalArgumentException("A JDBC URL must be provided with 'url' parameter")
     }
@@ -83,6 +93,17 @@ private[redshift] object Parameters {
      * are available for S3.
      */
     def rootTempDir: String = parameters("tempdir")
+
+    /**
+     * The format in which to save temporary files in S3. Defaults to "AVRO", other allowed values
+     * are "JSON", "CSV"
+     */
+    def tempFormat: String = parameters("tempformat")
+
+    /**
+     * The String value to write for nulls when using CSV.
+     */
+    def nullString: String = parameters("csvnullstring")
 
     /**
      * Creates a per-query subdirectory in the [[rootTempDir]], with a random UUID.
