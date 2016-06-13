@@ -98,12 +98,12 @@ private[redshift] class RedshiftWriter(
     val credsString: String = AWSCredentialsUtils.getRedshiftCredentialsString(creds)
     val fixedUrl = Utils.fixS3Url(manifestUrl)
     val format = params.tempFormat match {
-        case "AVRO" => "AVRO 'auto'"
-        case "JSON" => "JSON 'auto'"
+        case "AVRO" => "AVRO"
+        case "JSON" => "JSON"
         case csv => csv + s" NULL AS '${params.nullString}'"
     }
-    s"COPY ${params.table.get} FROM '$fixedUrl' CREDENTIALS '$credsString' FORMAT AS " +
-      s"${format} manifest ${params.extraCopyOptions}"
+    s"COPY ${params.table.get} ${params.columns} FROM '$fixedUrl' CREDENTIALS '$credsString' FORMAT AS " +
+      s"${format} ${params.extraCopyOptions} manifest"
   }
 
   /**

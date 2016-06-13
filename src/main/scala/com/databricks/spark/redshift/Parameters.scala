@@ -30,7 +30,7 @@ private[redshift] object Parameters {
     // * sortkeyspec has no default, but is optional
     // * distkey has no default, but is optional unless using diststyle KEY
     // * jdbcdriver has no default, but is optional
-
+    "dbcolumns" -> "",
     "tempformat" -> "AVRO",
     "csvnullstring" -> "@NULL@",
     "overwrite" -> "false",
@@ -110,6 +110,14 @@ private[redshift] object Parameters {
      */
     def createPerQueryTempDir(): String = Utils.makeTempPath(rootTempDir)
 
+    def columns: String = {
+      val dbcolumns = parameters("dbcolumns")
+      dbcolumns match {
+        case s if s.length == 0 => s
+        case s if s.startsWith("(") && dbcolumns.endsWith(")") => s
+        case _ => s"($dbcolumns)"
+      }
+    }
     /**
      * The Redshift table to be used as the target when loading or writing data.
      */

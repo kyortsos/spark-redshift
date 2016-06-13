@@ -259,6 +259,8 @@ private[redshift] class JDBCWrapper {
         case TimestampType => "TIMESTAMP"
         case DateType => "DATE"
         case t: DecimalType => s"DECIMAL(${t.precision},${t.scale})"
+        case ArrayType(_, _) => "TEXT"
+        case StructType(_) => "TEXT"
         case _ => throw new IllegalArgumentException(s"Don't know how to save $field to JDBC")
       }
       val nullable = if (field.nullable) "" else "NOT NULL"
