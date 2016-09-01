@@ -23,7 +23,7 @@ import java.net.URI
 import scala.collection.JavaConverters._
 
 import com.amazonaws.auth.AWSCredentials
-import com.amazonaws.services.s3.{AmazonS3Client, AmazonS3URI}
+import com.amazonaws.services.s3.AmazonS3Client
 import com.eclipsesource.json.Json
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.sources._
@@ -81,10 +81,7 @@ private[redshift] case class RedshiftRelation(
     writer.saveToRedshift(sqlContext, data, saveMode, params)
   }
 
-  // In Spark 1.6+, this method allows a data source to declare which filters it handles, allowing
-  // Spark to skip its own defensive filtering. See SPARK-10978 for more details. As long as we
-  // compile against Spark 1.4, we cannot use the `override` modifier here.
-  def unhandledFilters(filters: Array[Filter]): Array[Filter] = {
+  override def unhandledFilters(filters: Array[Filter]): Array[Filter] = {
     filters.filterNot(filter => FilterPushdown.buildFilterExpression(schema, filter).isDefined)
   }
 
@@ -127,7 +124,7 @@ private[redshift] case class RedshiftRelation(
       val filesToRead: Seq[String] = {
         val cleanedTempDirUri =
           Utils.fixS3Url(Utils.removeCredentialsFromURI(URI.create(tempDir)).toString)
-        val s3URI = new AmazonS3URI(cleanedTempDirUri)
+        val s3URI = Utils.createS3URI(cleanedTempDirUri)
         val s3Client = s3ClientFactory(creds)
         val is = s3Client.getObject(s3URI.getBucket, s3URI.getKey + "manifest").getObjectContent
         val s3Files = try {
@@ -171,11 +168,11 @@ private[redshift] case class RedshiftRelation(
     val columnList = requiredColumns.map(col => s""""$col"""").mkString(", ")
     val whereClause = FilterPushdown.buildWhereClause(schema, filters)
     val creds = AWSCredentialsUtils.load(params, sqlContext.sparkContext.hadoopConfiguration)
-    val credsString: String = AWSCredentialsUtils.getRedshiftCredentialsString(creds)
+    val credsString: String = AWSCredentialsUtils.getRedshiftCredentialsString(params, creds)
     val query = {
       // Since the query passed to UNLOAD will be enclosed in single quotes, we need to escape
-      // any single quotes that appear in the query itself
-      val escapedTableNameOrSubqury = tableNameOrSubquery.replace("'", "\\'")
+      // any backslashes and single quotes that appear in the query itself
+      val escapedTableNameOrSubqury = tableNameOrSubquery.replace("\\", "\\\\").replace("'", "\\'")
       s"SELECT $columnList FROM $escapedTableNameOrSubqury $whereClause"
     }
     // We need to remove S3 credentials from the unload path URI because they will conflict with
