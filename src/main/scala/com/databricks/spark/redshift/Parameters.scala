@@ -33,6 +33,7 @@ private[redshift] object Parameters {
     "dbcolumns" -> "",
     "tempformat" -> "AVRO",
     "csvnullstring" -> "@NULL@",
+    "createtableifnotexists" -> "true",
     "overwrite" -> "false",
     "diststyle" -> "EVEN",
     "usestagingtable" -> "true",
@@ -104,6 +105,13 @@ private[redshift] object Parameters {
      * The String value to write for nulls when using CSV.
      */
     def nullString: String = parameters("csvnullstring")
+
+    /**
+      * If true, when writing, first check to see if table exists and create it if it does not.
+      * When false, DataFrameWriter will assume table already exists
+      * Defaults to true.
+      */
+    def createTableIfNotExists: Boolean = parameters("createtableifnotexists").toBoolean
 
     /**
      * Creates a per-query subdirectory in the [[rootTempDir]], with a random UUID.

@@ -162,9 +162,12 @@ private[redshift] class RedshiftWriter(
     }
 
     // If the table doesn't exist, we need to create it first, using JDBC to infer column types
-    val createStatement = createTableSql(data, params)
-    log.info(createStatement)
-    jdbcWrapper.executeInterruptibly(conn.prepareStatement(createStatement))
+    // UPDATE 2016-07-26: if the application engineer does not want this code to run, don't run it
+    if (params.createTableIfNotExists) {
+      val createStatement = createTableSql(data, params)
+      log.info(createStatement)
+      jdbcWrapper.executeInterruptibly(conn.prepareStatement(createStatement))
+    }
 
     // Execute preActions
     params.preActions.foreach { action =>
