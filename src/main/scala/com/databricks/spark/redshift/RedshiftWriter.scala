@@ -359,7 +359,7 @@ private[redshift] class RedshiftWriter(
     Utils.checkThatBucketHasObjectLifecycleConfiguration(params.rootTempDir, s3ClientFactory(creds))
 
     // Save the table's rows to S3:
-    val manifestUrl = unloadData(sqlContext, data, params.createPerQueryTempDir())
+    val manifestUrl = unloadData(sqlContext, data, params.createPerQueryTempDir(), params.tempFormat, params.nullString)
     val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, params.credentials)
     conn.setAutoCommit(false)
     try {
